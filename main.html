@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Trigonometric Function Simulator</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; margin: 0; }
+        canvas { background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<canvas id="stage" width="400" height="450"></canvas>
+
+<script>
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+
+// スライダ構造の定義
+const slider = {
+    x: 20, y: 410, w: 360, h: 35,
+    min: 0, max: 360, value: 0,
+    knobX: 30, // 初期位置
+    isDragging: false,
+    
+    init() {
+        this.updateKnobPosition();
+    },
+    updateKnobPosition() {
+        const ratio = (this.value - this.min) / (this.max - this.min);
+        this.knobX = this.x + 10 + ratio * (this.w - 20);
+    },
+    updateValue(mx) {
+        const left = this.x + 10;
+        const right = this.x + this.w - 10;
+        let x = Math.max(left, Math.min(right, mx));
+        this.knobX = x;
+        const ratio = (x - left) / (this.w - 20);
+        this.value = this.min + ratio * (this.max - this.min);
+    }
+};
+slider.init();
+
+// イベントリスナーの登録
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    
+    if(mx >= slider.x && mx <= slider.x + slider.w && my >= slider.y && my <= slider.y + slider.h) {
+        slider.isDragging = true;
+        slider.updateValue(mx);
+    }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!slider.isDragging) return;
+    const rect = canvas.getBoundingClientRect();
+    slider.updateValue(e.clientX - rect.left);
+});
+
+window.addEventListener('mouseup', () => { slider.isDragging = false; });
+
+// 描画メインループ
+function render() {
+    ctx.clearRect(0, 0, 400, 450);
+    
+    // 1. グリッド線
+    ctx.strokeStyle = '#e1e1e1';
+    ctx.lineWidth = 0.5;
+    for(let i = 0; i <= 400; i += 10) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(400, i); ctx.stroke();
+    }
+    
+    // 2. 基準軸
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, 200); ctx.lineTo(400, 200); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(200, 0); ctx.lineTo(200, 400); ctx.stroke();
+    
+    // 3. 単位円
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(200, 200, 150, 0, Math.PI * 2); ctx.stroke();
+    
+    // 4. 三角関数の計算
+    const rad = (slider.value * Math.PI) / 180;
+    const cosV = Math.cos(rad);
+    const sinV = Math.sin(rad);
+    
+    const xpos = cosV * 150 + 200;
+    const ypos = -sinV * 150 + 200; // Y軸反転処理
+    
+    // 各種ベクトル線
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#0000c0'; // cos (Blue)
+    ctx.beginPath(); ctx.moveTo(xpos, ypos); ctx.lineTo(xpos, 200); ctx.stroke();
+    
+    ctx.strokeStyle = '#00c000'; // sin (Green)
+    ctx.beginPath(); ctx.moveTo(xpos, ypos); ctx.lineTo(200, ypos); ctx.stroke();
+    
+    ctx.strokeStyle = '#c00000'; // Radius (Red)
+    ctx.beginPath(); ctx.moveTo(200, 200); ctx.lineTo(xpos, ypos); ctx.stroke();
+    
+    // テキスト表示
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#0000c0';
+    ctx.fillText(`cos:${cosV.toFixed(3)}`, xpos + 5, 215);
+    ctx.fillStyle = '#00c000';
+    ctx.fillText(`sin:${sinV.toFixed(3)}`, 205, ypos - 5);
+    
+    // 5. スライダUIの描画
+    ctx.fillStyle = '#e1e1e1';
+    ctx.fillRect(slider.x, slider.y, slider.w, slider.h);
+    ctx.fillStyle = '#404080';
+    ctx.fillRect(slider.x + 10, slider.y + 10, slider.w - 20, slider.h - 20);
+    ctx.fillStyle = '#0000ff';
+    ctx.fillRect(slider.knobX - 2, slider.y, 4, slider.h);
+    
+    requestAnimationFrame(render);
+}
+
+// ループ開始
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
